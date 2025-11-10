@@ -21,6 +21,9 @@ export class TeamupApi implements ICredentialType {
 			displayName: 'Calendar Key',
 			name: 'calendarKey',
 			type: 'string',
+			typeOptions: {
+				password: true,
+			},
 			default: '',
 			required: true,
 			description: 'Your Teamup calendar key (e.g., ks1234567890abcdef)',
