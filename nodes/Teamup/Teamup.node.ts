@@ -194,8 +194,8 @@ export class Teamup implements INodeType {
 					},
 				},
 				default: '',
-				description: 'Get events that start before this date/time (leave empty for no end date)',
-				hint: 'Leave empty to get only events until midnight',
+				description: 'Get events that start before this date/time (leave empty to end on todays end of the day)',
+				hint: 'Leave empty to get only events until todays end of the day',
 			},
 			{
 				displayName: 'Limit',
