@@ -1,6 +1,6 @@
-# n8n-nodes-teamup
+# n8n-nodes-teamupcalendar
 
-This is an n8n community node. It lets you use Teamup Calendar in your n8n workflows.
+This is a n8n community node. It lets you use [Teamup Calendar](https://teamup.com) in your n8n workflows.
 
 Teamup Calendar is a collaborative calendar platform that allows teams to share calendars, manage events, and coordinate schedules. It offers powerful features like subcalendars and flexible access controls.
 
@@ -34,11 +34,12 @@ Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes
 To use this node, you need:
 
 1. **Teamup Calendar Account**: Sign up at [Teamup Calendar](https://teamup.com/register) and get your API key from there
-2. **Calendar Key**: The unique identifier for your Teamup calendar (found in your calendar URL)
+2. **Calendar Key**: The unique identifier for your Teamup calendar (found in your share calendar URL, Settings > Sharing > Create Link)
 
 ### Setting up credentials:
 1. Create a Teamup calendar or use an existing one
-3. Note your calendar key from the calendar URL (e.g., `https://teamup.com/ks1234567890` → key is `ks1234567890`)
+2. Share your calendar via Settings > Sharing > Create Link
+3. Note your calendar key from that sharing URL (e.g., `https://teamup.com/ks1234567890` → key is `ks1234567890`)
 4. In n8n, create new "Teamup API" credentials with your calendar key and API token
 
 ## Compatibility

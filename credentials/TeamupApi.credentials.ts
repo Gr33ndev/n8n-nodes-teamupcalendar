@@ -26,7 +26,7 @@ export class TeamupApi implements ICredentialType {
 			},
 			default: '',
 			required: true,
-			description: 'Your Teamup calendar key (e.g., ks1234567890abcdef)',
+			description: 'Your Teamup calendar key (e.g., ks1234567890abcdef). You can create one by going to Settings > Sharing > Create Link',
 			placeholder: 'ks1234567890abcdef',
 		},
 	];
