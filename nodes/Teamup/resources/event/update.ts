@@ -1,4 +1,5 @@
 import { IExecuteFunctions, INodeExecutionData, NodeOperationError } from 'n8n-workflow';
+import { formatDateTime } from '../../utils';
 
 interface TeamupCredentials {
 	token: string;
@@ -20,11 +21,6 @@ async function getCredentials(context: IExecuteFunctions): Promise<TeamupCredent
 		token: credentials.token as string,
 		calendarKey: credentials.calendarKey as string,
 	};
-}
-
-function formatDateTime(dateStr: string): string {
-	if (!dateStr) return dateStr;
-	return dateStr.replace(/\.\d{3}Z?$/, '').replace('Z', '');
 }
 
 function getErrorMessage(error: unknown): string {
