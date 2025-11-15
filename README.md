@@ -30,7 +30,6 @@ nodes documentation.
 - **Delete**: Remove events from the calendar
 - **Get**: Retrieve details of a specific event by its ID
 - **Get Auxiliary Info**: Fetch additional information related to an event
-- **Get Changed Events**: Fetch events that have changed since a specified timestamp
 - **Get Many**: Retrieve multiple events with filtering options by date range, subcalendar, and result limits
 - **Search events**: Find events based on keywords in titles or notes
 - **Undo**: Undo an event action
