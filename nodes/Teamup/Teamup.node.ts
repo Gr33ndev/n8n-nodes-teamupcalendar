@@ -11,7 +11,11 @@ import { create as createEvent } from './resources/event/create';
 import { update as updateEvent } from './resources/event/update';
 import { deleteEvent } from './resources/event/delete';
 import { getMany as getManyEvents } from './resources/event/getMany';
+import { create as createSubcalendar } from './resources/subcalendar/create';
+import { get as getSubcalendar } from './resources/subcalendar/get';
 import { getMany as getManySubcalendars } from './resources/subcalendar/getMany';
+import { update as updateSubcalendar } from './resources/subcalendar/update';
+import { deleteSubcalendar } from './resources/subcalendar/delete';
 
 function getErrorMessage(error: unknown): string {
 	if (error instanceof Error) return error.message;
@@ -24,23 +28,26 @@ async function loadSubcalendars(context: ILoadOptionsFunctions) {
 		const token = credentials.token as string;
 		const calendarKey = credentials.calendarKey as string;
 
-		const response = await context.helpers.httpRequest({
+		const response = (await context.helpers.httpRequest({
 			method: 'GET',
 			url: `https://api.teamup.com/${calendarKey}/subcalendars`,
 			headers: {
 				'Teamup-Token': token,
-				'Accept': 'application/json',
+				Accept: 'application/json',
 				'User-Agent': 'n8n-teamup-node/0.1.0',
 			},
 			json: true,
-		}) as { subcalendars: Array<{ id: string | number; name: string }> };
+		})) as { subcalendars: Array<{ id: string | number; name: string }> };
 
 		return (response.subcalendars || []).map((sc) => ({
 			name: sc.name,
 			value: String(sc.id),
 		}));
 	} catch (error) {
-		throw new NodeOperationError(context.getNode(), `Failed to load subcalendars: ${getErrorMessage(error)}`);
+		throw new NodeOperationError(
+			context.getNode(),
+			`Failed to load subcalendars: ${getErrorMessage(error)}`,
+		);
 	}
 }
 
@@ -130,13 +137,160 @@ export class Teamup implements INodeType {
 				},
 				options: [
 					{
+						name: 'Create',
+						value: 'create',
+						description: 'Create a new subcalendar',
+						action: 'Create an subcalendar',
+					},
+					{
+						name: 'Delete',
+						value: 'delete',
+						description: 'Delete a subcalendar',
+						action: 'Delete a subcalendar',
+					},
+					{
+						name: 'Get',
+						value: 'get',
+						description: 'Retrieve a single subcalendar by ID',
+						action: 'Get a subcalendar',
+					},
+					{
 						name: 'Get Many',
 						value: 'getMany',
 						description: 'Retrieve all subcalendars',
 						action: 'Get many subcalendars',
 					},
+					{
+						name: 'Update',
+						value: 'update',
+						description: 'Update an existing subcalendar',
+						action: 'Update a subcalendar',
+					},
 				],
 				default: 'getMany',
+			},
+			{
+				displayName: 'Subcalendar Name or ID',
+				name: 'subcalendarId',
+				type: 'options',
+				typeOptions: {
+					loadOptionsMethod: 'getSubcalendars',
+				},
+				displayOptions: {
+					show: {
+						resource: ['subcalendar'],
+						operation: ['get', 'update', 'delete'],
+					},
+				},
+				default: '',
+				required: true,
+				description:
+					'The subcalendar to update or delete. Choose from the list, or specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+			},
+			{
+				displayName: 'Update Fields',
+				name: 'subcalendarUpdateFields',
+				type: 'collection',
+				placeholder: 'Add Field to Update',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['subcalendar'],
+						operation: ['update'],
+					},
+				},
+				options: [
+					{
+						displayName: 'Name',
+						name: 'name',
+						type: 'string',
+						default: '',
+					},
+					{
+						displayName: 'Color Index',
+						name: 'color',
+						type: 'number',
+						default: 1,
+						description:
+							'The color index for the subcalendar (1-48). See color list here: https://teamup.stoplight.io/docs/api/ZG9jOjI4Mzk0ODA5-colors.',
+						typeOptions: {
+							minValue: 1,
+							maxValue: 48,
+						},
+					},
+					{
+						displayName: 'Active',
+						name: 'active',
+						type: 'boolean',
+						default: true,
+						description: 'Whether the subcalendar is active and visible',
+					},
+					{
+						displayName: 'Overlap Events',
+						name: 'overlap',
+						type: 'boolean',
+						default: true,
+						description: 'Whether allow overlapping events on this subcalendar or not',
+					},
+				],
+			},
+			{
+				displayName: 'Name',
+				name: 'name',
+				type: 'string',
+				required: true,
+				default: '',
+				description: 'The name of the new subcalendar',
+				displayOptions: {
+					show: {
+						resource: ['subcalendar'],
+						operation: ['create'],
+					},
+				},
+			},
+			{
+				displayName: 'Color Index',
+				name: 'color',
+				type: 'number',
+				default: 1,
+				description:
+					'The color index for the subcalendar (1-48). See color list here: https://teamup.stoplight.io/docs/api/ZG9jOjI4Mzk0ODA5-colors.',
+				typeOptions: {
+					minValue: 1,
+					maxValue: 48,
+				},
+				displayOptions: {
+					show: {
+						resource: ['subcalendar'],
+						operation: ['create'],
+					},
+				},
+			},
+			{
+				displayName: 'Active',
+				name: 'active',
+				type: 'boolean',
+				default: true,
+				description: 'Whether the subcalendar is active and visible',
+				displayOptions: {
+					show: {
+						resource: ['subcalendar'],
+						operation: ['create'],
+					},
+				},
+			},
+			{
+				displayName: 'Overlap Events',
+				name: 'overlap',
+				type: 'boolean',
+				default: true,
+				description: 'Whether allow overlapping events on this subcalendar or not',
+				displayOptions: {
+					show: {
+						resource: ['subcalendar'],
+						operation: ['create'],
+					},
+				},
 			},
 			{
 				displayName: 'Event ID',
@@ -309,10 +463,10 @@ export class Teamup implements INodeType {
 						name: 'This & Future Events',
 						value: 'future',
 					},
-                    {
-                        name: 'All Events in Series',
-                        value: 'all',
-                    },
+					{
+						name: 'All Events in Series',
+						value: 'all',
+					},
 				],
 				displayOptions: {
 					show: {
@@ -483,6 +637,10 @@ export class Teamup implements INodeType {
 							results = await createEvent(this, i);
 							returnData.push(results);
 							break;
+						case 'getMany':
+							results = await getManyEvents(this, i);
+							returnData.push(...results);
+							break;
 						case 'update':
 							results = await updateEvent(this, i);
 							returnData.push(results);
@@ -491,10 +649,6 @@ export class Teamup implements INodeType {
 							results = await deleteEvent(this, i);
 							returnData.push(results);
 							break;
-						case 'getMany':
-							results = await getManyEvents(this, i);
-							returnData.push(...results);
-							break;
 						default:
 							throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`, {
 								itemIndex: i,
@@ -502,9 +656,25 @@ export class Teamup implements INodeType {
 					}
 				} else if (resource === 'subcalendar') {
 					switch (operation) {
+						case 'create':
+							results = await createSubcalendar(this, i);
+							returnData.push(results);
+							break;
+						case 'get':
+							results = await getSubcalendar(this, i);
+							returnData.push(results);
+							break;
 						case 'getMany':
 							results = await getManySubcalendars(this, i);
 							returnData.push(...results);
+							break;
+						case 'update':
+							results = await updateSubcalendar(this, i);
+							returnData.push(results);
+							break;
+						case 'delete':
+							results = await deleteSubcalendar(this, i);
+							returnData.push(results);
 							break;
 						default:
 							throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`, {
