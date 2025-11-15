@@ -1,31 +1,5 @@
 import { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-
-interface TeamupCredentials {
-	token: string;
-	calendarKey: string;
-}
-
-interface TeamupEvent {
-	id: string;
-	title: string;
-	start_dt: string;
-	end_dt: string;
-	subcalendar_id?: number;
-	[key: string]: unknown;
-}
-
-async function getCredentials(context: IExecuteFunctions): Promise<TeamupCredentials> {
-	const credentials = await context.getCredentials('teamupApi');
-	return {
-		token: credentials.token as string,
-		calendarKey: credentials.calendarKey as string,
-	};
-}
-
-function formatDateTime(dateStr: string): string {
-	if (!dateStr) return dateStr;
-	return dateStr.replace(/\.\d{3}Z?$/, '').replace('Z', '');
-}
+import { formatDateTime, getCredentials, TeamupEvent } from '../../utils';
 
 function formatTodayDate(): string {
 	const today = new Date();
@@ -35,7 +9,10 @@ function formatTodayDate(): string {
 	return `${year}-${month}-${day}`;
 }
 
-export async function getMany(context: IExecuteFunctions, itemIndex: number): Promise<INodeExecutionData[]> {
+export async function getMany(
+	context: IExecuteFunctions,
+	itemIndex: number,
+): Promise<INodeExecutionData[]> {
 	const { token, calendarKey } = await getCredentials(context);
 
 	const subcalendarId = context.getNodeParameter('subcalendarId', itemIndex, '') as string;
@@ -65,20 +42,21 @@ export async function getMany(context: IExecuteFunctions, itemIndex: number): Pr
 		queryParams.push(`subcalendarId[]=${encodeURIComponent(subcalendarId)}`);
 	}
 
-	const url = queryParams.length > 0
-		? `https://api.teamup.com/${calendarKey}/events?${queryParams.join('&')}`
-		: `https://api.teamup.com/${calendarKey}/events`;
+	const url =
+		queryParams.length > 0
+			? `https://api.teamup.com/${calendarKey}/events?${queryParams.join('&')}`
+			: `https://api.teamup.com/${calendarKey}/events`;
 
-	const response = await context.helpers.httpRequest({
+	const response = (await context.helpers.httpRequest({
 		method: 'GET',
 		url,
 		headers: {
 			'Teamup-Token': token,
-			'Accept': 'application/json',
+			Accept: 'application/json',
 			'User-Agent': 'n8n-teamup-node/0.1.0',
 		},
 		json: true,
-	}) as { events: TeamupEvent[] };
+	})) as { events: TeamupEvent[] };
 
 	let events = response.events || [];
 
@@ -86,7 +64,7 @@ export async function getMany(context: IExecuteFunctions, itemIndex: number): Pr
 		events = events.slice(0, limit);
 	}
 
-	return events.map(event => ({
+	return events.map((event) => ({
 		json: event as IDataObject,
 		pairedItem: { item: itemIndex },
 	}));

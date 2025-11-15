@@ -8,14 +8,19 @@ import {
 } from 'n8n-workflow';
 
 import { create as createEvent } from './resources/event/create';
-import { update as updateEvent } from './resources/event/update';
 import { deleteEvent } from './resources/event/delete';
+import { get as getEvent } from './resources/event/get';
+import { getAuxiliaryInfo } from './resources/event/getAuxiliaryInfo';
 import { getMany as getManyEvents } from './resources/event/getMany';
+import { search as searchEvents } from './resources/event/search';
+import { update as updateEvent } from './resources/event/update';
+import { undo as undoEvent } from './resources/event/undo';
+
 import { create as createSubcalendar } from './resources/subcalendar/create';
+import { deleteSubcalendar } from './resources/subcalendar/delete';
 import { get as getSubcalendar } from './resources/subcalendar/get';
 import { getMany as getManySubcalendars } from './resources/subcalendar/getMany';
 import { update as updateSubcalendar } from './resources/subcalendar/update';
-import { deleteSubcalendar } from './resources/subcalendar/delete';
 
 function getErrorMessage(error: unknown): string {
 	if (error instanceof Error) return error.message;
@@ -113,10 +118,34 @@ export class Teamup implements INodeType {
 						action: 'Delete an event',
 					},
 					{
+						name: 'Get',
+						value: 'get',
+						description: 'Retrieve a single event by ID',
+						action: 'Get an event',
+					},
+					{
+						name: 'Get Auxiliary Info',
+						value: 'getAuxiliaryInfo',
+						description: "Get an event's history, comments, and signups",
+						action: 'Get auxiliary event info',
+					},
+					{
 						name: 'Get Many',
 						value: 'getMany',
 						description: 'Retrieve multiple events',
 						action: 'Get many events',
+					},
+					{
+						name: 'Search',
+						value: 'search',
+						description: 'Search events by keyword',
+						action: 'Search events',
+					},
+					{
+						name: 'Undo',
+						value: 'undo',
+						description: 'Undo the last action on an event',
+						action: 'Undo an event action',
 					},
 					{
 						name: 'Update',
@@ -299,13 +328,28 @@ export class Teamup implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['event'],
-						operation: ['update', 'delete'],
+						operation: ['get', 'getAuxiliaryInfo', 'update', 'delete'],
 					},
 				},
 				default: '',
 				required: true,
 				description: 'The unique identifier of the event',
 				placeholder: '1234567890',
+			},
+			{
+				displayName: 'Undo ID',
+				name: 'undoId',
+				type: 'string',
+				displayOptions: {
+					show: {
+						resource: ['event'],
+						operation: ['undo'],
+					},
+				},
+				default: '',
+				required: true,
+				description: 'The Undo ID received from a previous Create, Update, or Delete action',
+				placeholder: '3f4394eb85b5609babbb',
 			},
 			{
 				displayName: 'Subcalendar Name or ID',
@@ -355,13 +399,57 @@ export class Teamup implements INodeType {
 				hint: 'Leave empty to get only events until todays end of the day',
 			},
 			{
+				displayName: 'Search Query',
+				name: 'eventSearchQuery',
+				type: 'string',
+				displayOptions: {
+					show: {
+						resource: ['event'],
+						operation: ['search'],
+					},
+				},
+				default: '',
+				required: true,
+				description: 'The keyword or phrase to search for',
+			},
+			{
+				displayName: 'Subcalendars to Search',
+				name: 'eventSearchSubcalendarIds',
+				type: 'multiOptions',
+				typeOptions: {
+					loadOptionsMethod: 'getSubcalendars',
+				},
+				displayOptions: {
+					show: {
+						resource: ['event'],
+						operation: ['search'],
+					},
+				},
+				default: [],
+				description:
+					'A list of subcalendars to search in. Leave empty to search all. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+			},
+			{
+				displayName: 'Start Date',
+				name: 'eventSearchStartDate',
+				type: 'dateTime',
+				default: '',
+				description: 'Search for events starting on or after this date',
+				displayOptions: {
+					show: {
+						resource: ['event'],
+						operation: ['search'],
+					},
+				},
+			},
+			{
 				displayName: 'Limit',
 				name: 'limit',
 				type: 'number',
 				displayOptions: {
 					show: {
 						resource: ['event'],
-						operation: ['getMany'],
+						operation: ['getMany', 'search'],
 					},
 				},
 				typeOptions: {
@@ -637,16 +725,32 @@ export class Teamup implements INodeType {
 							results = await createEvent(this, i);
 							returnData.push(results);
 							break;
+						case 'delete':
+							results = await deleteEvent(this, i);
+							returnData.push(results);
+							break;
+						case 'get':
+							results = await getEvent(this, i);
+							returnData.push(results);
+							break;
+						case 'getAuxiliaryInfo':
+							results = await getAuxiliaryInfo(this, i);
+							returnData.push(results);
+							break;
 						case 'getMany':
 							results = await getManyEvents(this, i);
 							returnData.push(...results);
 							break;
-						case 'update':
-							results = await updateEvent(this, i);
+						case 'search':
+							results = await searchEvents(this, i);
+							returnData.push(...results);
+							break;
+						case 'undo':
+							results = await undoEvent(this, i);
 							returnData.push(results);
 							break;
-						case 'delete':
-							results = await deleteEvent(this, i);
+						case 'update':
+							results = await updateEvent(this, i);
 							returnData.push(results);
 							break;
 						default:
@@ -660,6 +764,10 @@ export class Teamup implements INodeType {
 							results = await createSubcalendar(this, i);
 							returnData.push(results);
 							break;
+						case 'delete':
+							results = await deleteSubcalendar(this, i);
+							returnData.push(results);
+							break;
 						case 'get':
 							results = await getSubcalendar(this, i);
 							returnData.push(results);
@@ -670,10 +778,6 @@ export class Teamup implements INodeType {
 							break;
 						case 'update':
 							results = await updateSubcalendar(this, i);
-							returnData.push(results);
-							break;
-						case 'delete':
-							results = await deleteSubcalendar(this, i);
 							returnData.push(results);
 							break;
 						default:

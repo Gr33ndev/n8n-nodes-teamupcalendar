@@ -1,4 +1,9 @@
-import { IDataObject, IExecuteFunctions, INodeExecutionData, NodeOperationError, } from 'n8n-workflow';
+import {
+	IDataObject,
+	IExecuteFunctions,
+	INodeExecutionData,
+	NodeOperationError,
+} from 'n8n-workflow';
 import { getCredentials, getErrorMessage } from '../../utils';
 
 export async function get(
@@ -7,15 +12,13 @@ export async function get(
 ): Promise<INodeExecutionData> {
 	const { token, calendarKey } = await getCredentials(context);
 
-	const subcalendarId = context.getNodeParameter('subcalendarId', itemIndex) as string;
-	if (!subcalendarId) {
-		throw new NodeOperationError(context.getNode(), 'Subcalendar ID is required for get', {
-			itemIndex,
-		});
+	const eventId = context.getNodeParameter('eventId', itemIndex) as string;
+	if (!eventId) {
+		throw new NodeOperationError(context.getNode(), 'Event ID is required', { itemIndex });
 	}
 
-	const url = `https://api.teamup.com/${calendarKey}/subcalendars/${subcalendarId}`;
-	let responseData: { subcalendar: IDataObject };
+	const url = `https://api.teamup.com/${calendarKey}/events/${eventId}`;
+	let responseData: { event: IDataObject };
 
 	try {
 		responseData = (await context.helpers.httpRequest({
@@ -27,21 +30,21 @@ export async function get(
 				'User-Agent': 'n8n-teamup-node/0.1.0',
 			},
 			json: true,
-		})) as { subcalendar: IDataObject };
+		})) as { event: IDataObject };
 
-		if (!responseData?.subcalendar) {
+		if (!responseData?.event) {
 			throw new Error('Invalid response data from API');
 		}
 	} catch (error) {
 		throw new NodeOperationError(
 			context.getNode(),
-			`Failed to fetch subcalendar ${subcalendarId}: ${getErrorMessage(error)}`,
+			`Failed to fetch event ${eventId}: ${getErrorMessage(error)}`,
 			{ itemIndex },
 		);
 	}
 
 	return {
-		json: responseData.subcalendar,
+		json: responseData.event,
 		pairedItem: { item: itemIndex },
 	};
 }

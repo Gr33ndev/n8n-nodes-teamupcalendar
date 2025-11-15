@@ -1,42 +1,23 @@
 import { IExecuteFunctions, INodeExecutionData, NodeOperationError } from 'n8n-workflow';
-import { formatDateTime, formatRrule } from '../../utils';
+import { formatDateTime, formatRrule, getCredentials, getErrorMessage, TeamupEvent, } from '../../utils';
 
-interface TeamupCredentials {
-	token: string;
-	calendarKey: string;
-}
-
-interface TeamupEvent {
-	id: string;
-	title: string;
-	start_dt: string;
-	end_dt: string;
-	subcalendar_id?: number;
-	[key: string]: unknown;
-}
-
-async function getCredentials(context: IExecuteFunctions): Promise<TeamupCredentials> {
-	const credentials = await context.getCredentials('teamupApi');
-	return {
-		token: credentials.token as string,
-		calendarKey: credentials.calendarKey as string,
-	};
-}
-
-function getErrorMessage(error: unknown): string {
-	if (error instanceof Error) return error.message;
-	return String(error);
-}
-
-export async function update(context: IExecuteFunctions, itemIndex: number): Promise<INodeExecutionData> {
+export async function update(
+	context: IExecuteFunctions,
+	itemIndex: number,
+): Promise<INodeExecutionData> {
 	const { token, calendarKey } = await getCredentials(context);
 
 	const eventId = context.getNodeParameter('eventId', itemIndex) as string;
 	if (!eventId) {
-		throw new NodeOperationError(context.getNode(), 'Event ID is required for update', { itemIndex });
+		throw new NodeOperationError(context.getNode(), 'Event ID is required for update', {
+			itemIndex,
+		});
 	}
 
-	const updateFields = context.getNodeParameter('updateFields', itemIndex, {}) as Record<string, unknown>;
+	const updateFields = context.getNodeParameter('updateFields', itemIndex, {}) as Record<
+		string,
+		unknown
+	>;
 	const redit = context.getNodeParameter('redit', itemIndex) as string;
 
 	if (updateFields.startDateTime) {
@@ -51,23 +32,23 @@ export async function update(context: IExecuteFunctions, itemIndex: number): Pro
 		updateFields.subcalendar_id = parseInt(updateFields.subcalendarId as string, 10);
 		delete updateFields.subcalendarId;
 	}
-	if(updateFields.rrule) {
+	if (updateFields.rrule) {
 		updateFields.rrule = formatRrule(updateFields.rrule as string);
 		delete updateFields.rrule;
 	}
 
 	let existingEvent: TeamupEvent;
 	try {
-		const existingEventResponse = await context.helpers.httpRequest({
+		const existingEventResponse = (await context.helpers.httpRequest({
 			method: 'GET',
 			url: `https://api.teamup.com/${calendarKey}/events/${eventId}`,
 			headers: {
 				'Teamup-Token': token,
-				'Accept': 'application/json',
+				Accept: 'application/json',
 				'User-Agent': 'n8n-teamup-node/0.1.0',
 			},
 			json: true,
-		}) as { event: TeamupEvent };
+		})) as { event: TeamupEvent };
 
 		if (!existingEventResponse?.event?.id) {
 			throw new Error('Event not found or invalid response body');
@@ -77,7 +58,7 @@ export async function update(context: IExecuteFunctions, itemIndex: number): Pro
 		throw new NodeOperationError(
 			context.getNode(),
 			`Failed to fetch event ${eventId} for update: ${getErrorMessage(error)}`,
-			{ itemIndex }
+			{ itemIndex },
 		);
 	}
 
@@ -92,7 +73,7 @@ export async function update(context: IExecuteFunctions, itemIndex: number): Pro
 		url: `https://api.teamup.com/${calendarKey}/events/${eventId}`,
 		headers: {
 			'Teamup-Token': token,
-			'Accept': 'application/json',
+			Accept: 'application/json',
 			'Content-Type': 'application/json',
 			'User-Agent': 'n8n-teamup-node/0.1.0',
 		},

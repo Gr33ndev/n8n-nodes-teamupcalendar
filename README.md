@@ -27,17 +27,22 @@ nodes documentation.
 
 - **Create**: Create a new calendar event with title, dates, subcalendar assignment, and optional fields like location,
   notes, and attendees
-- **Get Many**: Retrieve multiple events with filtering options by date range, subcalendar, and result limits
-- **Update**: Modify existing events including changing dates, titles, subcalendars, and other properties
 - **Delete**: Remove events from the calendar
+- **Get**: Retrieve details of a specific event by its ID
+- **Get Auxiliary Info**: Fetch additional information related to an event
+- **Get Changed Events**: Fetch events that have changed since a specified timestamp
+- **Get Many**: Retrieve multiple events with filtering options by date range, subcalendar, and result limits
+- **Search events**: Find events based on keywords in titles or notes
+- **Undo**: Undo an event action
+- **Update**: Modify existing events including changing dates, titles, subcalendars, and other properties
 
 ### Subcalendar Operations
 
 - **Create**: Add a new subcalendar to the Teamup calendar
+- **Delete**: Remove a subcalendar from the Teamup calendar
 - **Get**: Retrieve details of a specific subcalendar by its ID
 - **Get Many**: Fetch all available subcalendars for the connected Teamup calendar
 - **Update**: Change properties of an existing subcalendar such as name and color
-- **Delete**: Remove a subcalendar from the Teamup calendar
 
 ## Credentials
 

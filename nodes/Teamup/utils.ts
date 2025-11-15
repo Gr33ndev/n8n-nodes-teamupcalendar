@@ -1,3 +1,42 @@
+import { IExecuteFunctions } from 'n8n-workflow';
+
+export interface TeamupCredentials {
+	token: string;
+	calendarKey: string;
+}
+
+export interface TeamupSubcalendar {
+	id: string | number;
+	name: string;
+	color: number;
+	active: boolean;
+	overlap: boolean;
+	type: number;
+	[key: string]: unknown;
+}
+
+export interface TeamupEvent {
+	id: string;
+	title: string;
+	start_dt: string;
+	end_dt: string;
+	subcalendar_id?: number;
+	[key: string]: unknown;
+}
+
+export async function getCredentials(context: IExecuteFunctions): Promise<TeamupCredentials> {
+	const credentials = await context.getCredentials('teamupApi');
+	return {
+		token: credentials.token as string,
+		calendarKey: credentials.calendarKey as string,
+	};
+}
+
+export function getErrorMessage(error: unknown): string {
+	if (error instanceof Error) return error.message;
+	return String(error);
+}
+
 export function formatDateTime(dateStr: string): string {
 	if (!dateStr?.trim()) return dateStr;
 
@@ -23,5 +62,8 @@ export function formatDateTime(dateStr: string): string {
 }
 
 export function formatRrule(rruleInput: string): string {
-	return rruleInput.trim().replace(/^rrule:/i, '').trim();
+	return rruleInput
+		.trim()
+		.replace(/^rrule:/i, '')
+		.trim();
 }

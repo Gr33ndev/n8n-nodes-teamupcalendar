@@ -1,32 +1,10 @@
-import { IDataObject, IExecuteFunctions, INodeExecutionData, NodeOperationError, } from 'n8n-workflow';
-
-interface TeamupCredentials {
-	token: string;
-	calendarKey: string;
-}
-
-interface TeamupSubcalendar {
-	id: string | number;
-	name: string;
-	color: number;
-	active: boolean;
-	overlap: boolean;
-	type: number;
-	[key: string]: unknown;
-}
-
-async function getCredentials(context: IExecuteFunctions): Promise<TeamupCredentials> {
-	const credentials = await context.getCredentials('teamupApi');
-	return {
-		token: credentials.token as string,
-		calendarKey: credentials.calendarKey as string,
-	};
-}
-
-function getErrorMessage(error: unknown): string {
-	if (error instanceof Error) return error.message;
-	return String(error);
-}
+import {
+	IDataObject,
+	IExecuteFunctions,
+	INodeExecutionData,
+	NodeOperationError,
+} from 'n8n-workflow';
+import { getCredentials, getErrorMessage, TeamupSubcalendar } from '../../utils';
 
 export async function update(
 	context: IExecuteFunctions,

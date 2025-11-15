@@ -1,19 +1,10 @@
 import { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
+import { getCredentials } from '../../utils';
 
-interface TeamupCredentials {
-	token: string;
-	calendarKey: string;
-}
-
-async function getCredentials(context: IExecuteFunctions): Promise<TeamupCredentials> {
-	const credentials = await context.getCredentials('teamupApi');
-	return {
-		token: credentials.token as string,
-		calendarKey: credentials.calendarKey as string,
-	};
-}
-
-export async function deleteEvent(context: IExecuteFunctions, itemIndex: number): Promise<INodeExecutionData> {
+export async function deleteEvent(
+	context: IExecuteFunctions,
+	itemIndex: number,
+): Promise<INodeExecutionData> {
 	const { token, calendarKey } = await getCredentials(context);
 
 	const eventId = context.getNodeParameter('eventId', itemIndex) as string;
@@ -24,7 +15,7 @@ export async function deleteEvent(context: IExecuteFunctions, itemIndex: number)
 		url: `https://api.teamup.com/${calendarKey}/events/${eventId}?redit=${redit}`,
 		headers: {
 			'Teamup-Token': token,
-			'Accept': 'application/json',
+			Accept: 'application/json',
 			'User-Agent': 'n8n-teamup-node/0.1.0',
 		},
 		json: true,
