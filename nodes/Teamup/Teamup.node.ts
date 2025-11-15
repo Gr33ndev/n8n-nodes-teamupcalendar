@@ -11,6 +11,7 @@ import { create as createEvent } from './resources/event/create';
 import { deleteEvent } from './resources/event/delete';
 import { get as getEvent } from './resources/event/get';
 import { getAuxiliaryInfo } from './resources/event/getAuxiliaryInfo';
+import { getChanged as getChangedEvents } from './resources/event/getChanged';
 import { getMany as getManyEvents } from './resources/event/getMany';
 import { search as searchEvents } from './resources/event/search';
 import { update as updateEvent } from './resources/event/update';
@@ -128,6 +129,12 @@ export class Teamup implements INodeType {
 						value: 'getAuxiliaryInfo',
 						description: "Get an event's history, comments, and signups",
 						action: 'Get auxiliary event info',
+					},
+					{
+						name: 'Get Changed Events',
+						value: 'getChanged',
+						description: 'Get events that changed since a timestamp',
+						action: 'Get changed events',
 					},
 					{
 						name: 'Get Many',
@@ -443,6 +450,20 @@ export class Teamup implements INodeType {
 				},
 			},
 			{
+				displayName: 'Modified Since',
+				name: 'eventChangesModifiedSince',
+				type: 'dateTime',
+				displayOptions: {
+					show: {
+						resource: ['event'],
+						operation: ['getChanged'],
+					},
+				},
+				default: '',
+				required: true,
+				description: 'Return events that changed after this date and time (maximal 30 days ago)',
+			},
+			{
 				displayName: 'Limit',
 				name: 'limit',
 				type: 'number',
@@ -736,6 +757,10 @@ export class Teamup implements INodeType {
 						case 'getAuxiliaryInfo':
 							results = await getAuxiliaryInfo(this, i);
 							returnData.push(results);
+							break;
+						case 'getChanged':
+							results = await getChangedEvents(this, i);
+							returnData.push(...results);
 							break;
 						case 'getMany':
 							results = await getManyEvents(this, i);
