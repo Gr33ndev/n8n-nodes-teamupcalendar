@@ -1,0 +1,24 @@
+version: '3.7'
+
+services:
+  n8n-dev:
+    # Use a standard Node.js image
+    image: node:20
+    working_dir: /app
+    ports:
+      # Expose the n8n port
+      - "5678:5678"
+    environment:
+      # These are from your original local error logs.
+      # Let's set them to avoid warnings inside the container.
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - N8N_GIT_NODE_DISABLE_BARE_REPOS=true
+      - DB_SQLITE_POOL_SIZE=10
+    volumes:
+      # Mount your current folder into the container's /app folder
+      - ./:/app
+    command: sh -c "npm install && npm run dev"
+      # This command will:
+      # 1. Install all dependencies (like @n8n/node-cli, etc.)
+      # 2. Run your "dev" script, which starts the dev server

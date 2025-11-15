@@ -1,5 +1,5 @@
 import { IExecuteFunctions, INodeExecutionData, NodeOperationError } from 'n8n-workflow';
-import { formatDateTime } from '../../utils';
+import { formatDateTime, formatRrule } from '../../utils';
 
 interface TeamupCredentials {
 	token: string;
@@ -37,21 +37,23 @@ export async function update(context: IExecuteFunctions, itemIndex: number): Pro
 	}
 
 	const updateFields = context.getNodeParameter('updateFields', itemIndex, {}) as Record<string, unknown>;
-	const additionalFields = context.getNodeParameter('additionalFields', itemIndex, {}) as Record<string, unknown>;
+	const redit = context.getNodeParameter('redit', itemIndex) as string;
 
-	const fieldsToUpdate = { ...additionalFields, ...updateFields };
-
-	if (fieldsToUpdate.startDateTime) {
-		fieldsToUpdate.start_dt = formatDateTime(fieldsToUpdate.startDateTime as string);
-		delete fieldsToUpdate.startDateTime;
+	if (updateFields.startDateTime) {
+		updateFields.start_dt = formatDateTime(updateFields.startDateTime as string);
+		delete updateFields.startDateTime;
 	}
-	if (fieldsToUpdate.endDateTime) {
-		fieldsToUpdate.end_dt = formatDateTime(fieldsToUpdate.endDateTime as string);
-		delete fieldsToUpdate.endDateTime;
+	if (updateFields.endDateTime) {
+		updateFields.end_dt = formatDateTime(updateFields.endDateTime as string);
+		delete updateFields.endDateTime;
 	}
-	if (fieldsToUpdate.subcalendarId) {
-		fieldsToUpdate.subcalendar_id = parseInt(fieldsToUpdate.subcalendarId as string, 10);
-		delete fieldsToUpdate.subcalendarId;
+	if (updateFields.subcalendarId) {
+		updateFields.subcalendar_id = parseInt(updateFields.subcalendarId as string, 10);
+		delete updateFields.subcalendarId;
+	}
+	if(updateFields.rrule) {
+		updateFields.rrule = formatRrule(updateFields.rrule as string);
+		delete updateFields.rrule;
 	}
 
 	let existingEvent: TeamupEvent;
@@ -81,7 +83,8 @@ export async function update(context: IExecuteFunctions, itemIndex: number): Pro
 
 	const body = {
 		...existingEvent,
-		...fieldsToUpdate,
+		...updateFields,
+		redit: redit,
 	};
 
 	const response = await context.helpers.httpRequest({

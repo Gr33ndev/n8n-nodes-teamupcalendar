@@ -21,3 +21,7 @@ export function formatDateTime(dateStr: string): string {
 
 	throw new Error(`Unsupported date format: ${dateStr}`);
 }
+
+export function formatRrule(rruleInput: string): string {
+	return rruleInput.trim().replace(/^rrule:/i, '').trim();
+}

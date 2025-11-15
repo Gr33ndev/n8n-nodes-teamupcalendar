@@ -1,5 +1,5 @@
 import { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { formatDateTime } from '../../utils';
+import { formatDateTime, formatRrule } from '../../utils';
 
 interface TeamupCredentials {
 	token: string;
@@ -22,12 +22,14 @@ export async function create(context: IExecuteFunctions, itemIndex: number): Pro
 	const startDateTime = context.getNodeParameter('startDateTime', itemIndex) as string;
 	const endDateTime = context.getNodeParameter('endDateTime', itemIndex) as string;
 	const additionalFields = context.getNodeParameter('additionalFields', itemIndex, {}) as Record<string, unknown>;
+	const rrule = formatRrule(context.getNodeParameter('rrule', itemIndex) as string);
 
 	const body = {
 		subcalendar_id: parseInt(subcalendarId, 10),
 		title,
 		start_dt: formatDateTime(startDateTime),
 		end_dt: formatDateTime(endDateTime),
+		rrule: rrule,
 		...additionalFields,
 	};
 

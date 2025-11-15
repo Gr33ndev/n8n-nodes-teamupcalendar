@@ -167,7 +167,8 @@ export class Teamup implements INodeType {
 					},
 				},
 				default: '',
-				description: 'Filter events by a specific subcalendar (leave empty for all). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+				description:
+					'Filter events by a specific subcalendar (leave empty for all). Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 			},
 			{
 				displayName: 'Start Date',
@@ -180,7 +181,8 @@ export class Teamup implements INodeType {
 					},
 				},
 				default: '',
-				description: 'Get events that start on or after this date/time (leave empty to start from now)',
+				description:
+					'Get events that start on or after this date/time (leave empty to start from now)',
 				hint: 'Leave empty to get events from now on',
 			},
 			{
@@ -194,7 +196,8 @@ export class Teamup implements INodeType {
 					},
 				},
 				default: '',
-				description: 'Get events that start before this date/time (leave empty to end on todays end of the day)',
+				description:
+					'Get events that start before this date/time (leave empty to end on todays end of the day)',
 				hint: 'Leave empty to get only events until todays end of the day',
 			},
 			{
@@ -229,7 +232,8 @@ export class Teamup implements INodeType {
 				},
 				default: '',
 				required: true,
-				description: 'The subcalendar to which this event belongs. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+				description:
+					'The subcalendar to which this event belongs. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 			},
 			{
 				displayName: 'Title',
@@ -273,6 +277,49 @@ export class Teamup implements INodeType {
 				default: '',
 				required: true,
 				description: 'When the event ends',
+			},
+			{
+				displayName: 'Recurrence Rule (RRULE)',
+				name: 'rrule',
+				type: 'string',
+				default: '',
+				placeholder: 'FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=10',
+				description:
+					'An iCal RRULE string for recurring events. RRULE generator: https://calget.com/tools/rrule-generator.',
+				displayOptions: {
+					show: {
+						resource: ['event'],
+						operation: ['create'],
+					},
+				},
+			},
+			{
+				displayName: 'Recurring Edit Mode',
+				name: 'redit',
+				type: 'options',
+				default: 'single',
+				description:
+					"If updating a recurring series, choose how to apply the change. <b>For a single, non-recurring event, just leave this as 'This Single Event Only'.",
+				options: [
+					{
+						name: 'This Single Event Only',
+						value: 'single',
+					},
+					{
+						name: 'This & Future Events',
+						value: 'future',
+					},
+                    {
+                        name: 'All Events in Series',
+                        value: 'all',
+                    },
+				],
+				displayOptions: {
+					show: {
+						resource: ['event'],
+						operation: ['update', 'delete'],
+					},
+				},
 			},
 			{
 				displayName: 'Update Fields',
@@ -319,6 +366,15 @@ export class Teamup implements INodeType {
 						description: 'Additional notes or description for the event',
 					},
 					{
+						displayName: 'Recurrence Rule (RRULE)',
+						name: 'rrule',
+						type: 'string',
+						default: '',
+						placeholder: 'FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=10',
+						description:
+							'An iCal RRULE string for recurring events. RRULE generator: https://calget.com/tools/rrule-generator.',
+					},
+					{
 						displayName: 'Start Date & Time',
 						name: 'startDateTime',
 						type: 'dateTime',
@@ -333,7 +389,8 @@ export class Teamup implements INodeType {
 							loadOptionsMethod: 'getSubcalendars',
 						},
 						default: '',
-						description: 'Change the subcalendar. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+						description:
+							'Change the subcalendar. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 					},
 					{
 						displayName: 'Title',
@@ -361,7 +418,7 @@ export class Teamup implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['event'],
-						operation: ['create', 'update'],
+						operation: ['create'],
 					},
 				},
 				options: [
@@ -439,7 +496,9 @@ export class Teamup implements INodeType {
 							returnData.push(...results);
 							break;
 						default:
-							throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`, { itemIndex: i });
+							throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`, {
+								itemIndex: i,
+							});
 					}
 				} else if (resource === 'subcalendar') {
 					switch (operation) {
@@ -448,12 +507,15 @@ export class Teamup implements INodeType {
 							returnData.push(...results);
 							break;
 						default:
-							throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`, { itemIndex: i });
+							throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`, {
+								itemIndex: i,
+							});
 					}
 				} else {
-					throw new NodeOperationError(this.getNode(), `Unknown resource: ${resource}`, { itemIndex: i });
+					throw new NodeOperationError(this.getNode(), `Unknown resource: ${resource}`, {
+						itemIndex: i,
+					});
 				}
-
 			} catch (error) {
 				const errorMessage = getErrorMessage(error);
 
@@ -468,7 +530,7 @@ export class Teamup implements INodeType {
 				throw new NodeOperationError(
 					this.getNode(),
 					`Error processing item ${i}: ${errorMessage}`,
-					{ itemIndex: i }
+					{ itemIndex: i },
 				);
 			}
 		}
