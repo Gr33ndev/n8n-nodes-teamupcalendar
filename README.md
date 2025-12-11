@@ -63,7 +63,7 @@ To use this node, you need:
 ## Compatibility
 
 - **Minimum n8n version**: 1.117.3
-- **Tested with**: n8n version 1.117.3
+- **Tested with**: n8n version 1.117.3 & 1.123.5
 
 ## Usage
 
