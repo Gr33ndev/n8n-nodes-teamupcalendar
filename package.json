@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-teamupcalendar",
-  "version": "0.4.2",
+  "version": "1.0.0",
   "description": "n8n nodes for the Teamup Calendar API: events, subcalendars, signups, comments, reminders, access keys and a trigger for event changes",
   "license": "MIT",
   "homepage": "https://github.com/Gr33ndev/n8n-nodes-teamupcalendar#readme",
