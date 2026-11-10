@@ -1,64 +1,33 @@
-import { IDataObject, IExecuteFunctions, INodeExecutionData, NodeOperationError, } from 'n8n-workflow';
-import { getCredentials, getErrorMessage } from '../../utils';
+import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
+import { formatDateTime, teamupRequestAllItems } from '../../utils';
+import { getEventOptions, toEventItems } from './helpers';
 
 export async function search(
 	context: IExecuteFunctions,
 	itemIndex: number,
 ): Promise<INodeExecutionData[]> {
-	const { token, calendarKey } = await getCredentials(context);
-
 	const query = context.getNodeParameter('eventSearchQuery', itemIndex) as string;
-	const subcalendarIdInput = (
+	const subcalendarIds = (
 		context.getNodeParameter('eventSearchSubcalendarIds', itemIndex, []) as string[]
 	).map((id) => parseInt(id, 10));
-	const startDate = context.getNodeParameter('eventSearchStartDate', itemIndex, null) as string;
-	const limit = context.getNodeParameter('eventSearchLimit', itemIndex, 50) as number;
+	const startDate = context.getNodeParameter('eventSearchStartDate', itemIndex, '') as string;
+	const returnAll = context.getNodeParameter('returnAll', itemIndex, false) as boolean;
+	const limit = context.getNodeParameter('limit', itemIndex, 50) as number;
+	const options = getEventOptions(context, itemIndex);
 
-	const params: string[] = [];
+	const qs: Record<string, string | number | number[]> = { query };
+	if (startDate) qs.startDate = formatDateTime(startDate);
+	if (options.endDate) qs.endDate = formatDateTime(options.endDate as string);
+	if (subcalendarIds.length > 0) qs.subcalendarId = subcalendarIds;
+	if (options.tz) qs.tz = options.tz as string;
+	if (options.format) qs.format = options.format as string;
 
-	params.push(`query=${encodeURIComponent(query)}`);
-	params.push(`limit=${limit}`);
+	const events = await teamupRequestAllItems(
+		context,
+		{ method: 'GET', path: '/events', qs, itemIndex },
+		'events',
+		returnAll ? undefined : limit,
+	);
 
-	if (startDate) {
-		const formattedDate = new Date(startDate).toISOString().split('T')[0];
-		params.push(`startDate=${formattedDate}`);
-	}
-
-	if (subcalendarIdInput.length > 0) {
-		for (const id of subcalendarIdInput) {
-			params.push(`subcalendarId[]=${id}`);
-		}
-	}
-
-	const url = `https://api.teamup.com/${calendarKey}/events?${params.join('&')}`;
-
-	let responseData: { events: IDataObject[] };
-
-	try {
-		responseData = (await context.helpers.httpRequest({
-			method: 'GET',
-			url: url,
-			headers: {
-				'Teamup-Token': token,
-				Accept: 'application/json',
-				'User-Agent': 'n8n-teamup-node/0.1.0',
-			},
-			json: true,
-		})) as { events: IDataObject[] };
-
-		if (!responseData?.events) {
-			throw new Error('Invalid response data from API');
-		}
-	} catch (error) {
-		throw new NodeOperationError(
-			context.getNode(),
-			`Failed to search events with query "${query}": ${getErrorMessage(error)}`,
-			{ itemIndex },
-		);
-	}
-
-	return responseData.events.map((event) => ({
-		json: event,
-		pairedItem: { item: itemIndex },
-	}));
+	return toEventItems(context, itemIndex, events);
 }

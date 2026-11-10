@@ -1,17 +1,16 @@
 import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeExecutionData,
 	NodeOperationError,
+	type IDataObject,
+	type IExecuteFunctions,
+	type INodeExecutionData,
 } from 'n8n-workflow';
-import { getCredentials, getErrorMessage } from '../../utils';
+import { teamupRequest } from '../../utils';
+import { getEventOptions, toEventItems } from './helpers';
 
 export async function getChanged(
 	context: IExecuteFunctions,
 	itemIndex: number,
 ): Promise<INodeExecutionData[]> {
-	const { token, calendarKey } = await getCredentials(context);
-
 	const modifiedSinceString = context.getNodeParameter(
 		'eventChangesModifiedSince',
 		itemIndex,
@@ -23,9 +22,16 @@ export async function getChanged(
 		});
 	}
 
+	const options = getEventOptions(context, itemIndex);
 	const modifiedSinceDate = new Date(modifiedSinceString);
+	if (isNaN(modifiedSinceDate.getTime())) {
+		throw new NodeOperationError(context.getNode(), 'Modified Since is not a valid date', {
+			itemIndex,
+		});
+	}
+
 	const thirtyDaysAgo = new Date();
-	thirtyDaysAgo.setDate(new Date().getDate() - 30);
+	thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
 	if (modifiedSinceDate < thirtyDaysAgo) {
 		throw new NodeOperationError(
@@ -35,37 +41,21 @@ export async function getChanged(
 		);
 	}
 
-	const modifiedSinceTimestamp = Math.floor(modifiedSinceDate.getTime() / 1000);
+	const responseData = await teamupRequest<{ events: IDataObject[] }>(context, {
+		method: 'GET',
+		path: '/events',
+		qs: {
+			modifiedSince: Math.floor(modifiedSinceDate.getTime() / 1000),
+			mode: options.includeShortLived ? 'monitor' : undefined,
+		},
+		itemIndex,
+	});
 
-	const url = `https://api.teamup.com/${calendarKey}/events?modifiedSince=${modifiedSinceTimestamp}`;
-
-	let responseData: { events: IDataObject[] };
-
-	try {
-		responseData = (await context.helpers.httpRequest({
-			method: 'GET',
-			url: url,
-			headers: {
-				'Teamup-Token': token,
-				Accept: 'application/json',
-				'User-Agent': 'n8n-teamup-node/0.1.0',
-			},
-			json: true,
-		})) as { events: IDataObject[] };
-
-		if (!responseData?.events) {
-			throw new Error('Invalid response data from API');
-		}
-	} catch (error) {
-		throw new NodeOperationError(
-			context.getNode(),
-			`Failed to get changed events: ${getErrorMessage(error)}`,
-			{ itemIndex },
-		);
+	if (!responseData?.events) {
+		throw new NodeOperationError(context.getNode(), 'Invalid response data from API', {
+			itemIndex,
+		});
 	}
 
-	return responseData.events.map((event) => ({
-		json: event,
-		pairedItem: { item: itemIndex },
-	}));
+	return toEventItems(context, itemIndex, responseData.events);
 }

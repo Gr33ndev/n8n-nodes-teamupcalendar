@@ -1,8 +1,9 @@
 {
   "name": "n8n-nodes-teamupcalendar",
   "version": "0.4.2",
-  "description": "n8n node for Teamup Calendar API - interact with events and subcalendars",
+  "description": "n8n nodes for the Teamup Calendar API: events, subcalendars, signups, comments, reminders, access keys and a trigger for event changes",
   "license": "MIT",
+  "homepage": "https://github.com/Gr33ndev/n8n-nodes-teamupcalendar#readme",
   "keywords": [
     "n8n-community-node-package"
   ],
@@ -21,7 +22,8 @@
     "lint": "n8n-node lint",
     "lint:fix": "n8n-node lint --fix",
     "release": "n8n-node release",
-    "prepublishOnly": "n8n-node prerelease"
+    "prepublishOnly": "n8n-node prerelease",
+    "test:integration": "npm run build && node test/integration.js"
   },
   "files": [
     "dist"
@@ -33,16 +35,17 @@
       "dist/credentials/TeamupApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/Teamup/Teamup.node.js"
+      "dist/nodes/Teamup/Teamup.node.js",
+      "dist/nodes/Teamup/TeamupTrigger.node.js"
     ]
   },
   "devDependencies": {
-    "@n8n/node-cli": "*",
-    "eslint": "9.32.0",
-    "n8n-workflow": "^1.0.0",
-    "prettier": "3.6.2",
+    "@n8n/node-cli": "0.56.1",
+    "eslint": "9.39.4",
+    "n8n-workflow": "1.117.0",
+    "prettier": "3.8.3",
     "release-it": "^19.0.4",
-    "typescript": "5.9.2"
+    "typescript": "5.9.3"
   },
   "peerDependencies": {
     "n8n-workflow": "*"

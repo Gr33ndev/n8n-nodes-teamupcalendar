@@ -1,71 +1,46 @@
-import { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { formatDateTime, getCredentials, TeamupEvent } from '../../utils';
-
-function formatTodayDate(): string {
-	const today = new Date();
-	const year = today.getFullYear();
-	const month = String(today.getMonth() + 1).padStart(2, '0');
-	const day = String(today.getDate()).padStart(2, '0');
-	return `${year}-${month}-${day}`;
-}
+import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
+import { formatDateTime, teamupRequest, todayInTimezone, getResourceId } from '../../utils';
+import { getEventOptions, toEventItems } from './helpers';
 
 export async function getMany(
 	context: IExecuteFunctions,
 	itemIndex: number,
 ): Promise<INodeExecutionData[]> {
-	const { token, calendarKey } = await getCredentials(context);
-
-	const subcalendarId = context.getNodeParameter('subcalendarId', itemIndex, '') as string;
-	const startDateParam = context.getNodeParameter('startDate', itemIndex, '');
-	const endDateParam = context.getNodeParameter('endDate', itemIndex, '');
+	const subcalendarId = getResourceId(context, 'subcalendarId', itemIndex);
+	const startDateStr = String(context.getNodeParameter('startDate', itemIndex, '') ?? '').trim();
+	const endDateStr = String(context.getNodeParameter('endDate', itemIndex, '') ?? '').trim();
+	const returnAll = context.getNodeParameter('returnAll', itemIndex, false) as boolean;
 	const limit = context.getNodeParameter('limit', itemIndex, 50) as number;
+	const options = getEventOptions(context, itemIndex);
 
-	const queryParams: string[] = [];
+	const qs: Record<string, string | string[]> = {};
 
-	const startDateStr = startDateParam ? String(startDateParam).trim() : '';
-	const endDateStr = endDateParam ? String(endDateParam).trim() : '';
-
-	if (startDateStr) {
-		const startDate = formatDateTime(startDateStr);
-		queryParams.push(`startDate=${encodeURIComponent(startDate)}`);
-	} else {
-		const today = formatTodayDate();
-		queryParams.push(`startDate=${encodeURIComponent(today)}`);
-	}
-
+	// Same as 0.4.2: without a start date Teamup gets today's date; without an end date Teamup
+	// returns the events of the start date only.
+	qs.startDate = startDateStr
+		? formatDateTime(startDateStr)
+		: todayInTimezone(context.getTimezone());
 	if (endDateStr) {
-		const endDate = formatDateTime(endDateStr);
-		queryParams.push(`endDate=${encodeURIComponent(endDate)}`);
+		qs.endDate = formatDateTime(endDateStr);
 	}
 
 	if (subcalendarId) {
-		queryParams.push(`subcalendarId[]=${encodeURIComponent(subcalendarId)}`);
+		qs.subcalendarId = [String(subcalendarId)];
 	}
+	if (options.tz) qs.tz = options.tz as string;
+	if (options.format) qs.format = options.format as string;
 
-	const url =
-		queryParams.length > 0
-			? `https://api.teamup.com/${calendarKey}/events?${queryParams.join('&')}`
-			: `https://api.teamup.com/${calendarKey}/events`;
-
-	const response = (await context.helpers.httpRequest({
+	const response = await teamupRequest<{ events: IDataObject[] }>(context, {
 		method: 'GET',
-		url,
-		headers: {
-			'Teamup-Token': token,
-			Accept: 'application/json',
-			'User-Agent': 'n8n-teamup-node/0.1.0',
-		},
-		json: true,
-	})) as { events: TeamupEvent[] };
+		path: '/events',
+		qs,
+		itemIndex,
+	});
 
 	let events = response.events || [];
-
-	if (events.length > limit) {
+	if (!returnAll && events.length > limit) {
 		events = events.slice(0, limit);
 	}
 
-	return events.map((event) => ({
-		json: event as IDataObject,
-		pairedItem: { item: itemIndex },
-	}));
+	return toEventItems(context, itemIndex, events);
 }

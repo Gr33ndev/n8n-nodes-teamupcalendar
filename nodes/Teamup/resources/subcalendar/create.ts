@@ -1,42 +1,38 @@
-import { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
+import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
+import { compact, teamupRequest } from '../../utils';
 
 export async function create(
 	context: IExecuteFunctions,
 	itemIndex: number,
 ): Promise<INodeExecutionData> {
-	const credentials = await context.getCredentials('teamupApi');
 	const name = context.getNodeParameter('name', itemIndex) as string;
 	const color = context.getNodeParameter('color', itemIndex) as number;
 	const active = context.getNodeParameter('active', itemIndex) as boolean;
 	const overlap = context.getNodeParameter('overlap', itemIndex) as boolean;
+	const additionalFields = context.getNodeParameter(
+		'subcalendarAdditionalFields',
+		itemIndex,
+		{},
+	) as IDataObject;
 
 	const body = {
-		name: name,
-		color: color,
-		active: active,
-		overlap: overlap,
+		name,
+		color,
+		active,
+		overlap,
 		type: 0,
+		...compact(additionalFields),
 	};
 
-	const url = `https://api.teamup.com/${credentials.calendarKey}/subcalendars`;
-
-	const responseData = (await context.helpers.httpRequest({
+	const responseData = await teamupRequest<{ subcalendar: IDataObject }>(context, {
 		method: 'POST',
-		url: url,
-		headers: {
-			'Teamup-Token': credentials.token as string,
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			'User-Agent': 'n8n-teamup-node/0.1.0',
-		},
-		body: body,
-		json: true,
-	})) as { subcalendar: IDataObject };
-
-	const subcalendarData = responseData.subcalendar;
+		path: '/subcalendars',
+		body,
+		itemIndex,
+	});
 
 	return {
-		json: subcalendarData,
+		json: responseData.subcalendar,
 		pairedItem: { item: itemIndex },
 	};
 }

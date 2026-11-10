@@ -1,84 +1,48 @@
-import { IExecuteFunctions, INodeExecutionData, NodeOperationError } from 'n8n-workflow';
-import { formatDateTime, formatRrule, getCredentials, getErrorMessage, TeamupEvent, } from '../../utils';
+import {
+	NodeOperationError,
+	type IDataObject,
+	type IExecuteFunctions,
+	type INodeExecutionData,
+} from 'n8n-workflow';
+import { teamupRequest, type TeamupEvent, getResourceId } from '../../utils';
+import { applyExtraSubcalendars, getEventOptions, mapEventFields } from './helpers';
 
 export async function update(
 	context: IExecuteFunctions,
 	itemIndex: number,
 ): Promise<INodeExecutionData> {
-	const { token, calendarKey } = await getCredentials(context);
-
-	const eventId = context.getNodeParameter('eventId', itemIndex) as string;
+	const eventId = getResourceId(context, 'eventId', itemIndex);
 	if (!eventId) {
 		throw new NodeOperationError(context.getNode(), 'Event ID is required for update', {
 			itemIndex,
 		});
 	}
 
-	const updateFields = context.getNodeParameter('updateFields', itemIndex, {}) as Record<
-		string,
-		unknown
-	>;
+	const updateFields = context.getNodeParameter('updateFields', itemIndex, {}) as IDataObject;
 	const redit = context.getNodeParameter('redit', itemIndex) as string;
+	const options = getEventOptions(context, itemIndex);
+	const body = mapEventFields(context, itemIndex, updateFields);
 
-	if (updateFields.startDateTime) {
-		updateFields.start_dt = formatDateTime(updateFields.startDateTime as string);
-		delete updateFields.startDateTime;
-	}
-	if (updateFields.endDateTime) {
-		updateFields.end_dt = formatDateTime(updateFields.endDateTime as string);
-		delete updateFields.endDateTime;
-	}
-	if (updateFields.subcalendarId) {
-		updateFields.subcalendar_id = parseInt(updateFields.subcalendarId as string, 10);
-		delete updateFields.subcalendarId;
-	}
-	if (updateFields.rrule) {
-		updateFields.rrule = formatRrule(updateFields.rrule as string);
-		delete updateFields.rrule;
+	// Teamup only supports full updates (PUT), so the current event is merged with the changes.
+	// The current "version" is sent along, so Teamup rejects the update if the event changed meanwhile.
+	const existing = await teamupRequest<{ event: TeamupEvent }>(context, {
+		method: 'GET',
+		path: `/events/${eventId}`,
+		itemIndex,
+	});
+	if (!existing?.event?.id) {
+		throw new NodeOperationError(context.getNode(), `Event ${eventId} not found`, { itemIndex });
 	}
 
-	let existingEvent: TeamupEvent;
-	try {
-		const existingEventResponse = (await context.helpers.httpRequest({
-			method: 'GET',
-			url: `https://api.teamup.com/${calendarKey}/events/${eventId}`,
-			headers: {
-				'Teamup-Token': token,
-				Accept: 'application/json',
-				'User-Agent': 'n8n-teamup-node/0.1.0',
-			},
-			json: true,
-		})) as { event: TeamupEvent };
+	const existingIds = (existing.event.subcalendar_ids as number[] | undefined) ?? [];
+	applyExtraSubcalendars(body, (body.subcalendar_ids as number[] | undefined) ?? existingIds);
 
-		if (!existingEventResponse?.event?.id) {
-			throw new Error('Event not found or invalid response body');
-		}
-		existingEvent = existingEventResponse.event;
-	} catch (error) {
-		throw new NodeOperationError(
-			context.getNode(),
-			`Failed to fetch event ${eventId} for update: ${getErrorMessage(error)}`,
-			{ itemIndex },
-		);
-	}
-
-	const body = {
-		...existingEvent,
-		...updateFields,
-		redit: redit,
-	};
-
-	const response = await context.helpers.httpRequest({
+	const response = await teamupRequest(context, {
 		method: 'PUT',
-		url: `https://api.teamup.com/${calendarKey}/events/${eventId}`,
-		headers: {
-			'Teamup-Token': token,
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			'User-Agent': 'n8n-teamup-node/0.1.0',
-		},
-		body,
-		json: true,
+		path: `/events/${eventId}`,
+		qs: { inputFormat: options.inputFormat as string },
+		body: { ...existing.event, ...body, redit },
+		itemIndex,
 	});
 
 	return {

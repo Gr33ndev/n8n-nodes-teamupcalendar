@@ -1,18 +1,16 @@
 import {
-	IDataObject,
-	IExecuteFunctions,
-	INodeExecutionData,
 	NodeOperationError,
+	type IDataObject,
+	type IExecuteFunctions,
+	type INodeExecutionData,
 } from 'n8n-workflow';
-import { getCredentials, getErrorMessage, TeamupSubcalendar } from '../../utils';
+import { teamupRequest, type TeamupSubcalendar, getResourceId } from '../../utils';
 
 export async function update(
 	context: IExecuteFunctions,
 	itemIndex: number,
 ): Promise<INodeExecutionData> {
-	const { token, calendarKey } = await getCredentials(context);
-
-	const subcalendarId = context.getNodeParameter('subcalendarId', itemIndex) as string;
+	const subcalendarId = getResourceId(context, 'subcalendarId', itemIndex);
 	if (!subcalendarId) {
 		throw new NodeOperationError(context.getNode(), 'Subcalendar ID is required for update', {
 			itemIndex,
@@ -25,51 +23,26 @@ export async function update(
 		{},
 	) as IDataObject;
 
-	let existingSubcalendar: TeamupSubcalendar;
-	try {
-		const existingSubcalendarResponse = (await context.helpers.httpRequest({
-			method: 'GET',
-			url: `https://api.teamup.com/${calendarKey}/subcalendars/${subcalendarId}`,
-			headers: {
-				'Teamup-Token': token,
-				Accept: 'application/json',
-				'User-Agent': 'n8n-teamup-node/0.1.0',
-			},
-			json: true,
-		})) as { subcalendar: TeamupSubcalendar };
-
-		if (!existingSubcalendarResponse?.subcalendar?.id) {
-			throw new Error('Subcalendar not found or invalid response body');
-		}
-		existingSubcalendar = existingSubcalendarResponse.subcalendar;
-	} catch (error) {
-		throw new NodeOperationError(
-			context.getNode(),
-			`Failed to fetch subcalendar ${subcalendarId} for update: ${getErrorMessage(error)}`,
-			{ itemIndex },
-		);
+	const existing = await teamupRequest<{ subcalendar: TeamupSubcalendar }>(context, {
+		method: 'GET',
+		path: `/subcalendars/${subcalendarId}`,
+		itemIndex,
+	});
+	if (!existing?.subcalendar?.id) {
+		throw new NodeOperationError(context.getNode(), `Subcalendar ${subcalendarId} not found`, {
+			itemIndex,
+		});
 	}
 
-	const body = {
-		...existingSubcalendar,
-		...updateFields,
-	};
-
-	const response = await context.helpers.httpRequest({
+	const response = await teamupRequest<{ subcalendar: IDataObject }>(context, {
 		method: 'PUT',
-		url: `https://api.teamup.com/${calendarKey}/subcalendars/${subcalendarId}`,
-		headers: {
-			'Teamup-Token': token,
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			'User-Agent': 'n8n-teamup-node/0.1.0',
-		},
-		body,
-		json: true,
+		path: `/subcalendars/${subcalendarId}`,
+		body: { ...existing.subcalendar, ...updateFields },
+		itemIndex,
 	});
 
 	return {
-		json: (response as { subcalendar: IDataObject }).subcalendar,
+		json: response.subcalendar,
 		pairedItem: { item: itemIndex },
 	};
 }

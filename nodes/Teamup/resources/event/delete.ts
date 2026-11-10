@@ -1,28 +1,30 @@
-import { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { getCredentials } from '../../utils';
+import { NodeOperationError, type IExecuteFunctions, type INodeExecutionData } from 'n8n-workflow';
+import { teamupRequest, getResourceId } from '../../utils';
+import { getEventOptions } from './helpers';
 
 export async function deleteEvent(
 	context: IExecuteFunctions,
 	itemIndex: number,
 ): Promise<INodeExecutionData> {
-	const { token, calendarKey } = await getCredentials(context);
-
-	const eventId = context.getNodeParameter('eventId', itemIndex) as string;
+	const eventId = getResourceId(context, 'eventId', itemIndex);
 	const redit = context.getNodeParameter('redit', itemIndex) as string;
+	const options = getEventOptions(context, itemIndex);
 
-	const response = await context.helpers.httpRequest({
+	if (!eventId) {
+		throw new NodeOperationError(context.getNode(), 'Event ID is required for delete', {
+			itemIndex,
+		});
+	}
+
+	const response = await teamupRequest<{ undo_id?: string }>(context, {
 		method: 'DELETE',
-		url: `https://api.teamup.com/${calendarKey}/events/${eventId}?redit=${redit}`,
-		headers: {
-			'Teamup-Token': token,
-			Accept: 'application/json',
-			'User-Agent': 'n8n-teamup-node/0.1.0',
-		},
-		json: true,
+		path: `/events/${eventId}`,
+		qs: { redit, version: options.version as string },
+		itemIndex,
 	});
 
 	return {
-		json: response,
+		json: { deleted: true, ...(response?.undo_id ? { undo_id: response.undo_id } : {}) },
 		pairedItem: { item: itemIndex },
 	};
 }

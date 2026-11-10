@@ -1,44 +1,55 @@
-import { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { formatDateTime, formatRrule, getCredentials } from '../../utils';
+import {
+	NodeOperationError,
+	type IDataObject,
+	type IExecuteFunctions,
+	type INodeExecutionData,
+} from 'n8n-workflow';
+import { formatDateTime, formatRrule, teamupRequest, getResourceId } from '../../utils';
+import { applyExtraSubcalendars, getEventOptions, mapEventFields } from './helpers';
 
 export async function create(
 	context: IExecuteFunctions,
 	itemIndex: number,
 ): Promise<INodeExecutionData> {
-	const { token, calendarKey } = await getCredentials(context);
-
-	const subcalendarId = context.getNodeParameter('subcalendarId', itemIndex) as string;
+	const subcalendarId = getResourceId(context, 'subcalendarId', itemIndex);
 	const title = context.getNodeParameter('title', itemIndex) as string;
 	const startDateTime = context.getNodeParameter('startDateTime', itemIndex) as string;
 	const endDateTime = context.getNodeParameter('endDateTime', itemIndex) as string;
-	const additionalFields = context.getNodeParameter('additionalFields', itemIndex, {}) as Record<
-		string,
-		unknown
-	>;
-	const rrule = formatRrule(context.getNodeParameter('rrule', itemIndex) as string);
+	const additionalFields = context.getNodeParameter(
+		'additionalFields',
+		itemIndex,
+		{},
+	) as IDataObject;
+	const rrule = formatRrule(context.getNodeParameter('rrule', itemIndex, '') as string);
+	const options = getEventOptions(context, itemIndex);
 
-	const body = {
-		subcalendar_id: parseInt(subcalendarId, 10),
+	const baseIds = [parseInt(subcalendarId, 10)];
+	if (isNaN(baseIds[0])) {
+		throw new NodeOperationError(context.getNode(), 'Choose a subcalendar for the event', {
+			itemIndex,
+		});
+	}
+	const body: IDataObject = {
+		subcalendar_ids: baseIds,
 		title,
 		start_dt: formatDateTime(startDateTime),
 		end_dt: formatDateTime(endDateTime),
-		rrule: rrule,
-		...additionalFields,
+		signup_enabled: false,
+		comments_enabled: false,
+		attachments: [],
+		...mapEventFields(context, itemIndex, additionalFields),
 	};
+	applyExtraSubcalendars(body, baseIds);
+	if (rrule) {
+		body.rrule = rrule;
+	}
 
-	const url = `https://api.teamup.com/${calendarKey}/events`;
-
-	const response = await context.helpers.httpRequest({
+	const response = await teamupRequest(context, {
 		method: 'POST',
-		url,
-		headers: {
-			'Teamup-Token': token,
-			Accept: 'application/json',
-			'Content-Type': 'application/json',
-			'User-Agent': 'n8n-teamup-node/0.1.0',
-		},
+		path: '/events',
+		qs: { inputFormat: options.inputFormat as string, format: options.format as string },
 		body,
-		json: true,
+		itemIndex,
 	});
 
 	return {

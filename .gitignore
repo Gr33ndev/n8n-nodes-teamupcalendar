@@ -2,3 +2,7 @@
 /node_modules/
 /dist/
 /.vscode/
+/graphify-out/
+/.env.test
+.DS_Store
+/.claude/launch.json

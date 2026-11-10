@@ -1,27 +1,25 @@
-import { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
+import { NodeOperationError, type IExecuteFunctions, type INodeExecutionData } from 'n8n-workflow';
+import { teamupRequest, getResourceId } from '../../utils';
 
 export async function deleteSubcalendar(
 	context: IExecuteFunctions,
 	itemIndex: number,
 ): Promise<INodeExecutionData> {
-	const credentials = await context.getCredentials('teamupApi');
+	const subcalendarId = getResourceId(context, 'subcalendarId', itemIndex);
+	if (!subcalendarId) {
+		throw new NodeOperationError(context.getNode(), 'Subcalendar ID is required for delete', {
+			itemIndex,
+		});
+	}
 
-	const subcalendarId = context.getNodeParameter('subcalendarId', itemIndex) as string;
-
-	const url = `https://api.teamup.com/${credentials.calendarKey}/subcalendars/${subcalendarId}`;
-
-	const response = await context.helpers.httpRequest({
+	await teamupRequest(context, {
 		method: 'DELETE',
-		url: url,
-		headers: {
-			'Teamup-Token': credentials.token as string,
-			Accept: 'application/json',
-			'User-Agent': 'n8n-teamup-node/0.1.0',
-		},
+		path: `/subcalendars/${subcalendarId}`,
+		itemIndex,
 	});
 
 	return {
-		json: response,
+		json: { deleted: true },
 		pairedItem: { item: itemIndex },
 	};
 }

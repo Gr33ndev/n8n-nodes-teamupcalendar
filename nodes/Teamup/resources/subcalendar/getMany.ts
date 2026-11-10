@@ -1,27 +1,39 @@
-import { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { getCredentials, TeamupSubcalendar } from '../../utils';
+import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
+import { teamupRequest, teamupRequestAllItems } from '../../utils';
 
 export async function getMany(
 	context: IExecuteFunctions,
 	itemIndex: number,
 ): Promise<INodeExecutionData[]> {
-	const { token, calendarKey } = await getCredentials(context);
+	const filters = context.getNodeParameter('subcalendarFilters', itemIndex, {}) as IDataObject;
+	const qs: Record<string, string | boolean> = {};
+	if (filters.includeInactive) qs.includeInactive = true;
+	if (filters.filterBy) qs.filterBy = filters.filterBy as string;
+	if (filters.keyId) qs.keyId = filters.keyId as string;
 
-	const response = (await context.helpers.httpRequest({
-		method: 'GET',
-		url: `https://api.teamup.com/${calendarKey}/subcalendars`,
-		headers: {
-			'Teamup-Token': token,
-			Accept: 'application/json',
-			'User-Agent': 'n8n-teamup-node/0.1.0',
-		},
-		json: true,
-	})) as { subcalendars: TeamupSubcalendar[] };
+	const returnAll = context.getNodeParameter('returnAll', itemIndex, false) as boolean;
 
-	const subcalendars = response.subcalendars || [];
+	let subcalendars: IDataObject[];
+	if (returnAll) {
+		const response = await teamupRequest<{ subcalendars: IDataObject[] }>(context, {
+			method: 'GET',
+			path: '/subcalendars',
+			qs,
+			itemIndex,
+		});
+		subcalendars = response.subcalendars || [];
+	} else {
+		const limit = context.getNodeParameter('limit', itemIndex, 50) as number;
+		subcalendars = await teamupRequestAllItems(
+			context,
+			{ method: 'GET', path: '/subcalendars', qs, itemIndex },
+			'subcalendars',
+			limit,
+		);
+	}
 
 	return subcalendars.map((subcalendar) => ({
-		json: subcalendar as IDataObject,
+		json: subcalendar,
 		pairedItem: { item: itemIndex },
 	}));
 }
