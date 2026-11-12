@@ -1,5 +1,5 @@
 import type { INodeProperties } from 'n8n-workflow';
-import { eventLocator } from '../shared';
+import { eventField } from '../shared';
 
 export const signupDescription: INodeProperties[] = [
 	{
@@ -38,8 +38,9 @@ export const signupDescription: INodeProperties[] = [
 		],
 		default: 'getMany',
 	},
-	eventLocator({
+	...eventField({
 		name: 'signupEventId',
+		legacyDescription: 'The event the signup belongs to',
 		displayOptions: {
 			show: { resource: ['signup'] },
 		},

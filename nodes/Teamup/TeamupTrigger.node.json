@@ -1,5 +1,5 @@
 {
-  "node": "n8n-nodes-teamupcalendar",
+  "node": "n8n-nodes-teamupcalendar.teamupTrigger",
   "nodeVersion": "1.0",
   "codexVersion": "1.0",
   "categories": [

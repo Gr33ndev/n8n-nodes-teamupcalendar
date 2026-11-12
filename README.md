@@ -140,7 +140,7 @@ it to work with another calendar using the same credential.
 
 ### Selecting subcalendars and events
 
-Subcalendar and event fields offer **From List** and **By ID**. In the event list, type at least 2 characters to
+In node version 2, subcalendar and event fields offer **From List** and **By ID**. In the event list, type at least 2 characters to
 search events of the last and next 12 months; without a search term the list shows events from the last 7 to the next
 30 days.
 
@@ -164,23 +164,23 @@ When using "Get Many" for events:
 
 - All dates are automatically formatted for the Teamup API
 - Supports both date-only and full datetime values
-- The time zone of a date is kept: `2026-03-01T10:00:00Z` stays 10:00 UTC. Dates without a time zone are read in the
-  calendar's time zone.
+- Node version 2: the time zone of a date is kept, `2026-03-01T10:00:00Z` stays 10:00 UTC. Node version 1: a
+  trailing `Z` is removed, so the same value is read as 10:00 calendar time (behavior of 0.4.x).
+- Dates without a time zone are read in the calendar's time zone.
 
-### Breaking changes in 1.0.0
+### Node versions
 
-Parameters and operations are unchanged, so existing workflows keep their configuration. The behavior changes in
-these places:
+The Teamup node has two versions. Existing workflows keep **version 1** and behave exactly as before. New nodes use
+**version 2**. To switch an existing node, add the Teamup node again.
 
-- **Dates with a time zone are no longer shifted.** Before, a trailing `Z` was removed, so UTC times like
-  `2026-03-01T10:00:00Z` were read as 10:00 calendar time. Now they are read as 10:00 UTC. Check workflows that pass
-  UTC timestamps (for example `new Date().toISOString()`).
-- **Delete operations** (event, subcalendar, signup, access key) return `{ "deleted": true }`. Event > Delete also
-  returns the `undo_id`. Before, they returned `{ "success": true, "status": "Deleted", ... }`.
-- **Subcalendar and event fields are resource locators** ("From List" with search, or "By ID"). Saved selections
-  from older versions are read as IDs, but open each Teamup node once and check the Subcalendar and Event fields.
-- **Subcalendar > Get Many** has **Return All** and **Limit** now and returns 50 subcalendars by default. Turn on
-  Return All to get every subcalendar as before.
+| | Version 1 | Version 2 |
+| --- | --- | --- |
+| Dates with a time zone (e.g. trailing `Z`) | `Z` is removed, read as calendar time | Time zone is kept |
+| Subcalendar and event fields | Dropdown / text field | Resource locator ("From List" with search, or "By ID") |
+| Subcalendar > Get Many | Always returns all subcalendars | **Return All** / **Limit** (default 50) |
+| Delete operations | API response, or `{ "success": true, "status": "Deleted", ... }` | `{ "deleted": true }` (event: plus `undo_id`) |
+
+All new resources, operations and fields are available in both versions.
 
 ### Teamup Trigger
 

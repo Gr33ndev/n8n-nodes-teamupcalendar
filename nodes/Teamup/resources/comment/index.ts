@@ -1,5 +1,5 @@
 import type { INodeProperties } from 'n8n-workflow';
-import { eventLocator, formatOption, inputFormatOption } from '../shared';
+import { eventField, formatOption, inputFormatOption } from '../shared';
 
 export const commentDescription: INodeProperties[] = [
 	{
@@ -32,8 +32,9 @@ export const commentDescription: INodeProperties[] = [
 		],
 		default: 'create',
 	},
-	eventLocator({
+	...eventField({
 		name: 'commentEventId',
+		legacyDescription: 'The event the comment belongs to',
 		displayOptions: {
 			show: { resource: ['comment'] },
 		},

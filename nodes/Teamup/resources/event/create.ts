@@ -4,7 +4,7 @@ import {
 	type IExecuteFunctions,
 	type INodeExecutionData,
 } from 'n8n-workflow';
-import { formatDateTime, formatRrule, teamupRequest, getResourceId } from '../../utils';
+import { formatDateTime, formatRrule, teamupRequest, getResourceId, isVersion1 } from '../../utils';
 import { applyExtraSubcalendars, getEventOptions, mapEventFields } from './helpers';
 
 export async function create(
@@ -32,8 +32,8 @@ export async function create(
 	const body: IDataObject = {
 		subcalendar_ids: baseIds,
 		title,
-		start_dt: formatDateTime(startDateTime),
-		end_dt: formatDateTime(endDateTime),
+		start_dt: formatDateTime(startDateTime, isVersion1(context)),
+		end_dt: formatDateTime(endDateTime, isVersion1(context)),
 		signup_enabled: false,
 		comments_enabled: false,
 		attachments: [],

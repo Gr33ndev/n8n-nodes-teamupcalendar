@@ -1,5 +1,5 @@
 import { NodeOperationError, type IExecuteFunctions, type INodeExecutionData } from 'n8n-workflow';
-import { teamupRequest, getResourceId } from '../../utils';
+import { teamupRequest, getResourceId, isVersion1 } from '../../utils';
 import { getEventOptions } from './helpers';
 
 export async function deleteEvent(
@@ -24,7 +24,11 @@ export async function deleteEvent(
 	});
 
 	return {
-		json: { deleted: true, ...(response?.undo_id ? { undo_id: response.undo_id } : {}) },
+		json: isVersion1(context)
+			? response && Object.keys(response).length > 0
+				? response
+				: { success: true, eventId, status: 'Deleted' }
+			: { deleted: true, ...(response?.undo_id ? { undo_id: response.undo_id } : {}) },
 		pairedItem: { item: itemIndex },
 	};
 }

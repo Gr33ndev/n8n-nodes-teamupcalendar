@@ -1,5 +1,11 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { formatDateTime, teamupRequest, todayInTimezone, getResourceId } from '../../utils';
+import {
+	formatDateTime,
+	teamupRequest,
+	todayInTimezone,
+	getResourceId,
+	isVersion1,
+} from '../../utils';
 import { getEventOptions, toEventItems } from './helpers';
 
 export async function getMany(
@@ -18,10 +24,10 @@ export async function getMany(
 	// Same as 0.4.2: without a start date Teamup gets today's date; without an end date Teamup
 	// returns the events of the start date only.
 	qs.startDate = startDateStr
-		? formatDateTime(startDateStr)
+		? formatDateTime(startDateStr, isVersion1(context))
 		: todayInTimezone(context.getTimezone());
 	if (endDateStr) {
-		qs.endDate = formatDateTime(endDateStr);
+		qs.endDate = formatDateTime(endDateStr, isVersion1(context));
 	}
 
 	if (subcalendarId) {

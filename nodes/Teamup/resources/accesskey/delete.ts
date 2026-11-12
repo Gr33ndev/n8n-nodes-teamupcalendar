@@ -1,5 +1,5 @@
 import { NodeOperationError, type IExecuteFunctions, type INodeExecutionData } from 'n8n-workflow';
-import { teamupRequest } from '../../utils';
+import { teamupRequest, isVersion1 } from '../../utils';
 
 export async function deleteKey(
 	context: IExecuteFunctions,
@@ -17,7 +17,7 @@ export async function deleteKey(
 	});
 
 	return {
-		json: { deleted: true },
+		json: isVersion1(context) ? { success: true, keyId, status: 'Deleted' } : { deleted: true },
 		pairedItem: { item: itemIndex },
 	};
 }

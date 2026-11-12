@@ -1,5 +1,5 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { formatDateTime, formatRrule, parseJsonParameter } from '../../utils';
+import { formatDateTime, formatRrule, parseJsonParameter, isVersion1 } from '../../utils';
 import { simplifyEvent } from '../shared';
 
 /**
@@ -18,13 +18,13 @@ export function mapEventFields(
 		if (value === '' || value === undefined || value === null) continue;
 		switch (key) {
 			case 'startDateTime':
-				body.start_dt = formatDateTime(value as string);
+				body.start_dt = formatDateTime(value as string, isVersion1(context));
 				break;
 			case 'endDateTime':
-				body.end_dt = formatDateTime(value as string);
+				body.end_dt = formatDateTime(value as string, isVersion1(context));
 				break;
 			case 'signup_deadline':
-				body.signup_deadline = formatDateTime(value as string);
+				body.signup_deadline = formatDateTime(value as string, isVersion1(context));
 				break;
 			case 'subcalendarId':
 				body.subcalendar_ids = [parseInt(value as string, 10)];

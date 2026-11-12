@@ -1,5 +1,5 @@
 import type { INodeProperties } from 'n8n-workflow';
-import { eventLocator, subcalendarLocator } from '../shared';
+import { eventField, subcalendarField } from '../shared';
 
 export const reminderDescription: INodeProperties[] = [
 	{
@@ -38,7 +38,7 @@ export const reminderDescription: INodeProperties[] = [
 		],
 		default: 'getDefaults',
 	},
-	subcalendarLocator({
+	...subcalendarField({
 		name: 'reminderSubcalendarId',
 		description: 'The subcalendar whose default reminders to use',
 		displayOptions: {
@@ -48,8 +48,9 @@ export const reminderDescription: INodeProperties[] = [
 			},
 		},
 	}),
-	eventLocator({
+	...eventField({
 		name: 'reminderEventId',
+		legacyDescription: 'The event to set the reminders for',
 		displayOptions: {
 			show: {
 				resource: ['reminder'],

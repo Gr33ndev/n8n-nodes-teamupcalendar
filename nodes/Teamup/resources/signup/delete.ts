@@ -1,5 +1,5 @@
 import { NodeOperationError, type IExecuteFunctions, type INodeExecutionData } from 'n8n-workflow';
-import { teamupRequest, getResourceId } from '../../utils';
+import { teamupRequest, getResourceId, isVersion1 } from '../../utils';
 
 export async function deleteSignup(
 	context: IExecuteFunctions,
@@ -20,7 +20,9 @@ export async function deleteSignup(
 	});
 
 	return {
-		json: { deleted: true },
+		json: isVersion1(context)
+			? { success: true, eventId, signupId, status: 'Deleted' }
+			: { deleted: true },
 		pairedItem: { item: itemIndex },
 	};
 }

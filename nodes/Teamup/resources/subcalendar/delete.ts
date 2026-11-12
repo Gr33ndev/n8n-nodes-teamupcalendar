@@ -1,5 +1,5 @@
 import { NodeOperationError, type IExecuteFunctions, type INodeExecutionData } from 'n8n-workflow';
-import { teamupRequest, getResourceId } from '../../utils';
+import { teamupRequest, getResourceId, isVersion1 } from '../../utils';
 
 export async function deleteSubcalendar(
 	context: IExecuteFunctions,
@@ -12,14 +12,18 @@ export async function deleteSubcalendar(
 		});
 	}
 
-	await teamupRequest(context, {
+	const response = await teamupRequest(context, {
 		method: 'DELETE',
 		path: `/subcalendars/${subcalendarId}`,
 		itemIndex,
 	});
 
 	return {
-		json: { deleted: true },
+		json: isVersion1(context)
+			? response && Object.keys(response).length > 0
+				? response
+				: { success: true, subcalendarId, status: 'Deleted' }
+			: { deleted: true },
 		pairedItem: { item: itemIndex },
 	};
 }

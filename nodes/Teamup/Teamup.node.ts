@@ -134,7 +134,8 @@ export class Teamup implements INodeType {
 		name: 'teamup',
 		icon: { light: 'file:teamup.svg', dark: 'file:teamup.dark.svg' },
 		group: ['input', 'output'],
-		version: 1,
+		version: [1, 2],
+		defaultVersion: 2,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description: 'Interact with the Teamup Calendar API',
 		defaults: {

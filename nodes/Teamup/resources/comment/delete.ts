@@ -1,5 +1,5 @@
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { teamupRequest, getResourceId } from '../../utils';
+import { teamupRequest, getResourceId, isVersion1 } from '../../utils';
 
 export async function deleteComment(
 	context: IExecuteFunctions,
@@ -15,7 +15,9 @@ export async function deleteComment(
 	});
 
 	return {
-		json: { deleted: true },
+		json: isVersion1(context)
+			? { success: true, eventId, commentId, status: 'Deleted' }
+			: { deleted: true },
 		pairedItem: { item: itemIndex },
 	};
 }

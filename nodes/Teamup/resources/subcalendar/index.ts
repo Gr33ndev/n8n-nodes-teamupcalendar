@@ -1,5 +1,5 @@
 import type { INodeProperties } from 'n8n-workflow';
-import { sortByName, subcalendarLocator } from '../shared';
+import { FROM_VERSION_2, sortByName, subcalendarField } from '../shared';
 
 const colorDescription =
 	'The color index for the subcalendar (1-48). See color list here: https://teamup.stoplight.io/docs/api/ZG9jOjI4Mzk0ODA5-colors.';
@@ -90,7 +90,7 @@ export const subcalendarDescription: INodeProperties[] = [
 		],
 		default: 'getMany',
 	},
-	subcalendarLocator({
+	...subcalendarField({
 		name: 'subcalendarId',
 		description: 'The subcalendar to work with',
 		displayOptions: {
@@ -226,6 +226,7 @@ export const subcalendarDescription: INodeProperties[] = [
 			show: {
 				resource: ['subcalendar'],
 				operation: ['getMany'],
+				'@version': FROM_VERSION_2,
 			},
 		},
 		default: false,
@@ -240,6 +241,7 @@ export const subcalendarDescription: INodeProperties[] = [
 				resource: ['subcalendar'],
 				operation: ['getMany'],
 				returnAll: [false],
+				'@version': FROM_VERSION_2,
 			},
 		},
 		typeOptions: {

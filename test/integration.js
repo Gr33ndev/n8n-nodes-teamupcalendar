@@ -85,9 +85,9 @@ const useUser = Boolean(env.TEAMUP_EMAIL && env.TEAMUP_PASSWORD);
 const sharedCredentials = makeCredentials(useUser);
 console.log(`INFO  auth: ${useUser ? 'API key + calendar key + user login (bearer)' : 'API key + calendar key'}`);
 
-function makeContext(params, { credentials, staticData = {}, mode = 'manual' } = {}) {
+function makeContext(params, { credentials, staticData = {}, mode = 'manual', version = 2 } = {}) {
 	credentials = credentials || sharedCredentials;
-	const node = { name: 'Teamup', type: 'teamup', typeVersion: 1, parameters: params };
+	const node = { name: 'Teamup', type: 'teamup', typeVersion: version, parameters: params };
 	return {
 		getNode: () => node,
 		getNodeParameter: (name, a, b) =>
@@ -520,6 +520,44 @@ function assert(cond, msg) {
 		assert(mine && mine.json.changeType === 'deleted', 'deletion not reported');
 		return 'changeType deleted';
 	});
+	// ---- node version 1: behavior of 0.4.2 must be unchanged
+	const v1 = { version: 1 };
+	await step('v1: subcalendar.getMany returns all (ignores limit)', async () => {
+		const r = await run({ resource: 'subcalendar', operation: 'getMany', limit: 1 }, v1);
+		assert(r.length === state.initialSubcalendars + 1 || r.length > 1, `got ${r.length}`);
+		return `${r.length} subcalendars`;
+	});
+	await step('v1: event.create drops "Z" (UTC read as calendar time)', async () => {
+		const [r] = await run(
+			{
+				resource: 'event', operation: 'create', subcalendarId: String(state.subId), title: `v1 ${stamp}`,
+				startDateTime: startUtc, endDateTime: endUtc, rrule: '', additionalFields: {},
+			},
+			v1,
+		);
+		state.v1EventId = r.event.id;
+		assert(r.event.start_dt.startsWith('2026-12-01T10:00:00'), `start_dt ${r.event.start_dt}`);
+		return `start_dt ${r.event.start_dt}`;
+	});
+	await step('v1: event.get with plain string ID', async () => {
+		const [r] = await run({ resource: 'event', operation: 'get', eventId: String(state.v1EventId) }, v1);
+		assert(String(r.id) === String(state.v1EventId), 'wrong event');
+	});
+	await step('v1: event.delete returns raw API response', async () => {
+		const [r] = await run({ resource: 'event', operation: 'delete', eventId: String(state.v1EventId), redit: 'single' }, v1);
+		assert(r.undo_id && r.deleted === undefined, JSON.stringify(r));
+		return JSON.stringify(r);
+	});
+	await step('v2: event.delete returns { deleted: true }', async () => {
+		const [created] = await run({
+			resource: 'event', operation: 'create', subcalendarId: String(state.subId), title: `v2del ${stamp}`,
+			startDateTime: startUtc, endDateTime: endUtc, rrule: '', additionalFields: {},
+		});
+		const [r] = await run({ resource: 'event', operation: 'delete', eventId: created.event.id, redit: 'single' });
+		assert(r.deleted === true && r.undo_id, JSON.stringify(r));
+		return JSON.stringify(r);
+	});
+
 	await step('event.delete with stale version is rejected', async () => {
 		assert(state.eventId, 'no test event');
 		try {

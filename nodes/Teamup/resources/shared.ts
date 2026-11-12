@@ -223,3 +223,71 @@ export function eventLocator(
 		...overrides,
 	} as INodeProperties;
 }
+
+/** Display conditions for parameters that differ between node version 1 and 2. */
+export const VERSION_1 = [1];
+export const FROM_VERSION_2 = [{ _cnd: { gte: 2 } }];
+
+type FieldOverrides = Partial<INodeProperties> &
+	Pick<INodeProperties, 'name' | 'displayOptions'> & { legacyDescription?: string };
+
+function withVersion(
+	displayOptions: INodeProperties['displayOptions'],
+	version: unknown,
+): INodeProperties['displayOptions'] {
+	return {
+		...displayOptions,
+		show: { ...(displayOptions?.show ?? {}), '@version': version as number[] },
+	};
+}
+
+const LOAD_OPTIONS_HINT =
+	'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.';
+
+/**
+ * Subcalendar field: dropdown for node version 1 (unchanged), resource locator from version 2 on.
+ * Both share the parameter name; getResourceId() reads either format.
+ */
+export function subcalendarField(overrides: FieldOverrides): INodeProperties[] {
+	const { legacyDescription, ...rest } = overrides;
+	const legacy: INodeProperties = {
+		displayName: 'Subcalendar Name or ID',
+		name: rest.name,
+		type: 'options',
+		typeOptions: { loadOptionsMethod: 'getSubcalendars' },
+		default: '',
+		required: rest.required ?? true,
+		description:
+			'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+		displayOptions: withVersion(rest.displayOptions, VERSION_1),
+	};
+	legacy.description = `${legacyDescription ?? rest.description ?? 'The subcalendar'}. ${LOAD_OPTIONS_HINT}`;
+	return [
+		legacy,
+		subcalendarLocator({
+			...rest,
+			displayOptions: withVersion(rest.displayOptions, FROM_VERSION_2),
+		}),
+	];
+}
+
+/**
+ * Event field: text field for node version 1 (unchanged), resource locator from version 2 on.
+ */
+export function eventField(overrides: FieldOverrides): INodeProperties[] {
+	const { legacyDescription, ...rest } = overrides;
+	const legacy: INodeProperties = {
+		displayName: 'Event ID',
+		name: rest.name,
+		type: 'string',
+		default: '',
+		required: true,
+		placeholder: 'e.g. 1234567890',
+		description: legacyDescription ?? 'The unique identifier of the event',
+		displayOptions: withVersion(rest.displayOptions, VERSION_1),
+	};
+	return [
+		legacy,
+		eventLocator({ ...rest, displayOptions: withVersion(rest.displayOptions, FROM_VERSION_2) }),
+	];
+}

@@ -43,14 +43,25 @@ export function getErrorMessage(error: unknown): string {
 	return String(error);
 }
 
+/** Node version 2 changed date handling and other behavior. Version 1 keeps the old behavior. */
+export function isVersion1(context: TeamupContext): boolean {
+	return context.getNode().typeVersion < 2;
+}
+
 /**
- * Formats a date for Teamup. Time zone information is kept: a trailing "Z" becomes "+00:00".
+ * Formats a date for Teamup.
+ *
+ * Version 2: time zone information is kept, a trailing "Z" becomes "+00:00".
+ * Version 1 (`legacy`): a trailing "Z" is removed, so Teamup reads UTC times as calendar time.
  * Dates without a time zone are interpreted by Teamup in the calendar's time zone.
  */
-export function formatDateTime(dateStr: string): string {
+export function formatDateTime(dateStr: string, legacy = false): string {
 	if (!dateStr?.trim()) return dateStr;
 
 	if (dateStr.includes('T') && dateStr.includes('-')) {
+		if (legacy) {
+			return dateStr.replace(/\.\d{3}Z?$/, '').replace('Z', '');
+		}
 		return dateStr
 			.trim()
 			.replace(/\.\d+(?=Z|[+-]\d{2}:?\d{2}$|$)/, '')
@@ -65,7 +76,7 @@ export function formatDateTime(dateStr: string): string {
 
 	const d = new Date(dateStr);
 	if (!isNaN(d.getTime())) {
-		return `${d.toISOString().slice(0, 19)}+00:00`;
+		return legacy ? d.toISOString().slice(0, 19) : `${d.toISOString().slice(0, 19)}+00:00`;
 	}
 
 	throw new Error(`Unsupported date format: ${dateStr}`);

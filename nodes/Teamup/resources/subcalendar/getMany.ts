@@ -1,5 +1,5 @@
 import type { IDataObject, IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
-import { teamupRequest, teamupRequestAllItems } from '../../utils';
+import { teamupRequest, teamupRequestAllItems, isVersion1 } from '../../utils';
 
 export async function getMany(
 	context: IExecuteFunctions,
@@ -11,7 +11,9 @@ export async function getMany(
 	if (filters.filterBy) qs.filterBy = filters.filterBy as string;
 	if (filters.keyId) qs.keyId = filters.keyId as string;
 
-	const returnAll = context.getNodeParameter('returnAll', itemIndex, false) as boolean;
+	// Version 1 always returns all subcalendars.
+	const returnAll =
+		isVersion1(context) || (context.getNodeParameter('returnAll', itemIndex, false) as boolean);
 
 	let subcalendars: IDataObject[];
 	if (returnAll) {

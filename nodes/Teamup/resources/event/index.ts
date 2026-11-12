@@ -1,12 +1,12 @@
 import type { INodeProperties } from 'n8n-workflow';
 import {
-	eventLocator,
+	eventField,
 	extraEventFields,
 	formatOption,
 	inputFormatOption,
 	simplifyParameter,
 	sortByName,
-	subcalendarLocator,
+	subcalendarField,
 } from '../shared';
 
 export const eventDescription: INodeProperties[] = [
@@ -88,7 +88,7 @@ export const eventDescription: INodeProperties[] = [
 		],
 		default: 'getMany',
 	},
-	eventLocator({
+	...eventField({
 		name: 'eventId',
 		displayOptions: {
 			show: {
@@ -112,10 +112,11 @@ export const eventDescription: INodeProperties[] = [
 		description: 'The undo ID returned by a previous create, update or delete action',
 		placeholder: 'e.g. 3f4394eb85b5609babbb',
 	},
-	subcalendarLocator({
+	...subcalendarField({
 		name: 'subcalendarId',
 		required: false,
 		description: 'Only return events of this subcalendar. Leave empty for all subcalendars.',
+		legacyDescription: 'Filter events by a specific subcalendar (leave empty for all)',
 		displayOptions: {
 			show: {
 				resource: ['event'],
@@ -243,7 +244,7 @@ export const eventDescription: INodeProperties[] = [
 		default: 50,
 		description: 'Max number of results to return',
 	},
-	subcalendarLocator({
+	...subcalendarField({
 		name: 'subcalendarId',
 		description: 'The subcalendar to which this event belongs',
 		displayOptions: {
